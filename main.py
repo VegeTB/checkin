@@ -6,6 +6,8 @@ import datetime
 import logging
 import random
 import hashlib
+
+
 from typing import Dict, Any
 
 logger = logging.getLogger("CheckInPlugin")
@@ -34,8 +36,6 @@ MOTIVATIONAL_MESSAGES = [
     "牢记自由！",
     "扣↓↑←↓↑→↓↑送地狱火。",
     "扣↓→↑↑↑送地狱火",
-    "抽到这条tip的人发一张腿照。",
-    "抽到这条tip的人发一张腿照。",
     "抽到这条tip的人发一张腿照。",
     "抽到这条tip的人发一张腿照。",
     "抽到这条tip的人发一张腿照。",
@@ -265,3 +265,14 @@ class CheckInPlugin(Star):
     #         for i, (uid, data) in enumerate(ranked)
     #     ]
     #     yield event.plain_result("\n".join(msg))
+
+
+    @command_group("超级商店", alias = ["shop", "商店"])
+    async def shop(self):
+        """支持消费战争债券奖章"""
+
+        pass
+
+    @command("C01", alias = ["c01"])
+    async def shop_reset(self, event: AstrMessageEvent):
+        """重置当日C-01申请次数"""
