@@ -95,6 +95,33 @@ def _get_context_id(event: AstrMessageEvent) -> str:
         logger.error(f"上下文ID生成异常: {str(e)}")
         return "default_ctx"
 
+def check_saving(self, n: int):
+    ctx_id = _get_context_id(event)
+    user_id = event.get_sender_id()
+
+    # 初始化数据结构（新增username字段）
+    ctx_data = self.data.setdefault(ctx_id, {})
+    user_data = ctx_data.setdefault(user_id, {
+        "username": event.get_sender_name(),  # 确保存储的是用户昵称
+        "total_days": 0,
+        "continuous_days": 0,
+        "month_days": 0,
+        "total_rewards": 0,
+        "month_rewards": 0,
+        "last_checkin": None
+    })
+
+    saving = user_data["month_rewards"]
+    if saving < n:
+        yield event.plain_result(f"🛒⛔购买失败。可用奖章不足。")
+        return
+    else:
+        user_data.update({
+            "month_rewards": user_data["month_rewards"] - n
+        })
+
+        _save_data(self.data)
+
 def _generate_rewards() -> int:
     """生成1-10随机战争债券奖章"""
     return random.randint(1, 10)
@@ -267,12 +294,39 @@ class CheckInPlugin(Star):
     #     yield event.plain_result("\n".join(msg))
 
 
-    @command_group("超级商店", alias = ["shop", "商店"])
+    @command_group("超级商店", alias=["shop", "商店"])
     async def shop(self):
         """支持消费战争债券奖章"""
 
         pass
 
-    @command("C01", alias = ["c01"])
+    @shop.command("重置", alias=["重置"])
     async def shop_reset(self, event: AstrMessageEvent):
         """重置当日C-01申请次数"""
+        check_saving(10)
+        ats = [f"{event.get_sender_id}"]
+        chain = event.message_obj.message
+        args = event.message_str.split()
+        # if len(args) < 2 or not args[1].isdigit():
+        #     yield event.plain_result("格式：/重置次数 [QQ号]")
+        #     return
+        # for comp in chain:
+        #     if isinstance(comp, At):
+        #         qq = str(comp.qq)
+        #         ats.append(qq)
+        # if not ats:
+        #     yield event.plain_result("请在指令后 @ 一个用户。")
+        #     return
+
+        target_id = str(ats[0])
+        today = datetime.now().strftime("%Y-%m-%d")
+        group_id = str(event.message_obj.group_id)
+
+        if group_id in self.operation_counter and today in self.operation_counter[group_id]:
+            if target_id in self.operation_counter[group_id][today]:
+                del self.operation_counter[group_id][today][target_id]
+                self._save_operation_counter()
+
+        yield event.plain_result(f"已重置公民 {target_id} 的当日申请次数")
+
+    # @shop.command("")
